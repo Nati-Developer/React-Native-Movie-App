@@ -8,10 +8,11 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as WebBrowser from "expo-web-browser";
 
 import { icons } from "@/constants/icons";
 import useFetch from "@/services/usefetch";
-import { fetchMovieDetails } from "@/services/api";
+import { fetchMovieDetails, fetchMovieTrailerUrl } from "@/services/api";
 
 interface MovieInfoProps {
   label: string;
@@ -34,6 +35,7 @@ const Details = () => {
   const { data: movie, loading } = useFetch(() =>
     fetchMovieDetails(id as string)
   );
+  const { data: trailerUrl } = useFetch(() => fetchMovieTrailerUrl(id as string));
 
   if (loading)
     return (
@@ -44,7 +46,7 @@ const Details = () => {
 
   return (
     <View className="bg-primary flex-1">
-      <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <View>
           <Image
             source={{
@@ -54,7 +56,15 @@ const Details = () => {
             resizeMode="stretch"
           />
 
-          <TouchableOpacity className="absolute bottom-5 right-5 rounded-full size-14 bg-white flex items-center justify-center">
+          <TouchableOpacity
+            className="absolute bottom-5 right-5 rounded-full size-14 bg-white flex items-center justify-center"
+            onPress={async () => {
+              if (trailerUrl) {
+                await WebBrowser.openBrowserAsync(trailerUrl);
+              }
+            }}
+            disabled={!trailerUrl}
+          >
             <Image
               source={icons.play}
               className="w-6 h-7 ml-1"
@@ -114,7 +124,7 @@ const Details = () => {
       </ScrollView>
 
       <TouchableOpacity
-        className="absolute bottom-5 left-0 right-0 mx-5 bg-accent rounded-lg py-3.5 flex flex-row items-center justify-center z-50"
+        className="absolute bottom-8 left-0 right-0 mx-5 bg-accent rounded-lg py-3.5 flex flex-row items-center justify-center z-50"
         onPress={router.back}
       >
         <Image

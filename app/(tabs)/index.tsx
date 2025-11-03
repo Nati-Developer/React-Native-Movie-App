@@ -46,8 +46,8 @@ const Index = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ minHeight: "100%", paddingBottom: 10 }}
       >
-        <Image source={icons.logo} className="w-12 h-10 mt-20 mb-5 mx-auto" />
-        <Text className="text-white text-xl font-bold text-center mb-4">NatiMovie</Text>
+        <Image source={icons.logo} className="w-44 h-40 mt-20 mb-5 mx-auto" />
+        {/* <Text className="text-white text-xl font-bold text-center mb-4">NatiMovie</Text> */}
 
         {moviesLoading || trendingLoading ? (
           <ActivityIndicator

@@ -27,7 +27,7 @@ function buildUrl(path: string, params: Record<string, string | number | undefin
 
 export const fetchMovies = async ({ query }: { query: string }): Promise<Movie[]> => {
   try {
-    const targetCount = 50;
+    const targetCount = 70;
     const combined: Movie[] = [];
     let page = 1;
     // TMDB returns 20 per page; fetch up to 3 pages to reach ~60 and then slice 50
@@ -113,5 +113,42 @@ export const fetchTrendingMovies = async (): Promise<TrendingMovie[]> => {
   } catch (error) {
     console.error("fetchTrendingMovies error", error);
     throw error;
+  }
+};
+
+export const fetchMovieTrailerUrl = async (
+  movieId: string | number
+): Promise<string | null> => {
+  try {
+    const endpoint = buildUrl(`/movie/${movieId}/videos`, { language: "en-US" });
+    const response = await fetch(endpoint, {
+      method: "GET",
+      headers: TMDB_CONFIG.headers,
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(
+        `Failed to fetch videos: ${response.status} ${response.statusText} - ${text.substring(0, 200)}`
+      );
+    }
+    const data = await response.json();
+    const results = (data?.results ?? []) as Array<{
+      site?: string;
+      type?: string;
+      key?: string;
+      official?: boolean;
+      name?: string;
+    }>;
+    const preferred =
+      results.find(
+        (v) => v.site === "YouTube" && v.type === "Trailer" && v.official
+      ) || results.find((v) => v.site === "YouTube" && v.type === "Trailer") || results.find((v) => v.site === "YouTube");
+    if (preferred?.key) {
+      return `https://www.youtube.com/watch?v=${preferred.key}`;
+    }
+    return null;
+  } catch (error) {
+    console.error("fetchMovieTrailerUrl error", error);
+    return null;
   }
 };

@@ -65,11 +65,11 @@ const Search = () => {
           gap: 16,
           marginVertical: 16,
         }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingTop: 20, paddingBottom: 140 }}
         ListHeaderComponent={
           <>
             <View className="w-full flex-row justify-center mt-20 items-center">
-              <Image source={icons.logo} className="w-12 h-10" />
+              <Image source={icons.logo} className="w-44 h-40" />
             </View>
 
             <View className="my-5">
@@ -78,14 +78,14 @@ const Search = () => {
                 value={searchQuery}
                 onChangeText={handleSearch}
               />
-              <View className="mt-3 items-center">
+              {/* <View className="mt-3 items-center">
                 <TouchableOpacity
                   className="bg-accent px-4 py-2 rounded-full"
                   onPress={() => router.push("/scan")}
                 >
                   <Text className="text-primary font-semibold">Scan QR</Text>
                 </TouchableOpacity>
-              </View>
+              </View> */}
             </View>
 
             {loading && (

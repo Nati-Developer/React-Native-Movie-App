@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "rn-movie-app",
+    "name": "Natiflix",
     "slug": "rn-movie-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/icons/natiflex-removebg-preview.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
@@ -17,7 +17,7 @@
     "android": {
       "permissions": [],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.png",
+        "foregroundImage": "./assets/icons/natiflixlogo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.natiwosen.rnmovieapp"
@@ -25,7 +25,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/logo.png"
+      "favicon": "./assets/icons/natiflixlogo.png"
     },
     "plugins": [
       "expo-router",
@@ -41,6 +41,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f57f0ce0-a89a-401d-8d83-461605c33a85"
+      }
     }
   }
 }
