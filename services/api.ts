@@ -1,44 +1,80 @@
 export const TMDB_CONFIG = {
   BASE_URL: "https://api.themoviedb.org/3",
   API_KEY: process.env.EXPO_PUBLIC_MOVIE_API_KEY,
+  TOKEN: process.env.EXPO_PUBLIC_TMDB_BEARER,
   headers: {
     accept: "application/json",
-    // TMDB v3 API key is passed via query param, not Authorization header
+    // If a v4 API Read Access Token is provided, use Bearer auth
+    ...(process.env.EXPO_PUBLIC_TMDB_BEARER
+      ? { Authorization: `Bearer ${process.env.EXPO_PUBLIC_TMDB_BEARER}` }
+      : {}),
   },
 };
 
-export const fetchMovies = async ({
-  query,
-}: {
-  query: string;
-}): Promise<Movie[]> => {
-  const base = query
-    ? `${TMDB_CONFIG.BASE_URL}/search/movie`
-    : `${TMDB_CONFIG.BASE_URL}/discover/movie`;
-  const endpoint = `${base}?api_key=${TMDB_CONFIG.API_KEY}` +
-    (query ? `&query=${encodeURIComponent(query)}` : `&sort_by=popularity.desc`);
-
-  const response = await fetch(endpoint, {
-    method: "GET",
-    headers: TMDB_CONFIG.headers,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch movies: ${response.statusText}`);
+function buildUrl(path: string, params: Record<string, string | number | undefined> = {}) {
+  const url = new URL(`${TMDB_CONFIG.BASE_URL}${path}`);
+  // Only append api_key when not using v4 Bearer token
+  if (!TMDB_CONFIG.TOKEN && TMDB_CONFIG.API_KEY) {
+    url.searchParams.set("api_key", String(TMDB_CONFIG.API_KEY));
   }
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") {
+      url.searchParams.set(key, String(value));
+    }
+  });
+  return url.toString();
+}
 
-  const data = await response.json();
-  return data.results;
+export const fetchMovies = async ({ query }: { query: string }): Promise<Movie[]> => {
+  try {
+    const targetCount = 50;
+    const combined: Movie[] = [];
+    let page = 1;
+    // TMDB returns 20 per page; fetch up to 3 pages to reach ~60 and then slice 50
+    while (combined.length < targetCount && page <= 3) {
+      const endpoint = buildUrl(query ? "/search/movie" : "/discover/movie", {
+        language: "en-US",
+        include_adult: "false",
+        sort_by: query ? undefined : "popularity.desc",
+        query: query || undefined,
+        page,
+      });
+
+      const response = await fetch(endpoint, {
+        method: "GET",
+        headers: TMDB_CONFIG.headers,
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(
+          `Failed to fetch movies: ${response.status} ${response.statusText} - ${text.substring(0, 200)}`
+        );
+      }
+
+      const data = await response.json();
+      const results: Movie[] = data.results ?? [];
+      combined.push(...results);
+      if (results.length < 20) break; // no more pages
+      page += 1;
+    }
+
+    return combined.slice(0, targetCount);
+  } catch (error) {
+    console.error("fetchMovies error", error);
+    throw error;
+  }
 };
 
 export const fetchMovieDetails = async (
   movieId: string
 ): Promise<MovieDetails> => {
   try {
-    const response = await fetch(
-      `${TMDB_CONFIG.BASE_URL}/movie/${movieId}?api_key=${TMDB_CONFIG.API_KEY}`,
-      { method: "GET", headers: TMDB_CONFIG.headers }
-    );
+    const endpoint = buildUrl(`/movie/${movieId}`, { language: "en-US" });
+    const response = await fetch(endpoint, {
+      method: "GET",
+      headers: TMDB_CONFIG.headers,
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch movie details: ${response.statusText}`);
@@ -53,21 +89,29 @@ export const fetchMovieDetails = async (
 };
 
 export const fetchTrendingMovies = async (): Promise<TrendingMovie[]> => {
-  const endpoint = `${TMDB_CONFIG.BASE_URL}/trending/movie/day?api_key=${TMDB_CONFIG.API_KEY}`;
-  const response = await fetch(endpoint, {
-    method: "GET",
-    headers: TMDB_CONFIG.headers,
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch trending movies: ${response.statusText}`);
+  try {
+    const endpoint = buildUrl("/trending/movie/day", { language: "en-US" });
+    const response = await fetch(endpoint, {
+      method: "GET",
+      headers: TMDB_CONFIG.headers,
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(
+        `Failed to fetch trending movies: ${response.status} ${response.statusText} - ${text.substring(0, 200)}`
+      );
+    }
+    const data = await response.json();
+    const movies: Movie[] = data.results ?? [];
+    return movies.slice(0, 5).map((m) => ({
+      searchTerm: "trending",
+      movie_id: m.id,
+      title: m.title,
+      count: 0,
+      poster_url: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+    }));
+  } catch (error) {
+    console.error("fetchTrendingMovies error", error);
+    throw error;
   }
-  const data = await response.json();
-  const movies: Movie[] = data.results ?? [];
-  return movies.slice(0, 5).map((m) => ({
-    searchTerm: "trending",
-    movie_id: m.id,
-    title: m.title,
-    count: 0,
-    poster_url: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
-  }));
 };
